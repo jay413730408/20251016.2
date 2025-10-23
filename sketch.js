@@ -8,7 +8,7 @@
 let finalScore = 0; 
 let maxScore = 0;
 let scoreText = ""; // 用於 p5.js 繪圖的文字
-let fireworks = []; // 【新增】用於儲存所有啟動的煙火物件
+let fireworks = []; // 【保留】用於儲存所有啟動的煙火物件
 
 
 window.addEventListener('message', function (event) {
@@ -26,7 +26,7 @@ window.addEventListener('message', function (event) {
         console.log("新的分數已接收:", scoreText); 
 
         // ----------------------------------------
-        // 關鍵步驟 2: 呼叫重新繪製 (見方案二)
+        // 關鍵步驟 2: 呼叫重新繪製 
         // ----------------------------------------
         if (typeof redraw === 'function') {
             redraw(); 
@@ -40,23 +40,18 @@ window.addEventListener('message', function (event) {
 // -----------------------------------------------------------------
 
 function setup() { 
-    // ... (其他設置)
     createCanvas(windowWidth / 2, windowHeight / 2); 
-    background(255); 
-    // 【修改】將 noLoop() 移除或註釋掉，因為煙火需要持續繪製來實現動畫
-    // noLoop(); 
+    // 【保留】移除 noLoop() 確保動畫執行
     frameRate(60); // 確保流暢的動畫
     colorMode(HSB); // 使用 HSB 顏色模式方便隨機顏色
 } 
 
-// score_display.js 中的 draw() 函數片段
-
 function draw() { 
-    // 【修改】使用帶有透明度的背景，實現拖尾/殘影效果
-    background(0, 0, 0, 0.2); // 黑色背景，0.2 透明度
+    // 【重要修正】使用完全不透明的黑色背景 (0)，確保文字和分數清晰可見，避免殘影。
+    background(0); 
 
     // 計算百分比
-    let percentage = (finalScore / maxScore) * 100;
+    let percentage = maxScore > 0 ? (finalScore / maxScore) * 100 : 0;
 
     textSize(80); 
     textAlign(CENTER);
@@ -65,29 +60,29 @@ function draw() {
     // A. 根據分數區間改變文本顏色和內容 (畫面反映一)
     // -----------------------------------------------------------------
     if (percentage >= 90) {
-        // 滿分或高分：顯示鼓勵文本，使用鮮豔顏色
-        fill(100, 200, 200); // HSB 綠色
+        // 滿分或高分：顯示鼓勵文本，使用鮮豔顏色 (HSB 綠色)
+        fill(100, 255, 255); 
         text("恭喜！優異成績！", width / 2, height / 2 - 50);
         
     } else if (percentage >= 60) {
-        // 中等分數：顯示一般文本，使用黃色 [6]
-        fill(45, 255, 255); // HSB 黃色
+        // 中等分數：顯示一般文本 (HSB 黃色)
+        fill(45, 255, 255); 
         text("成績良好，請再接再厲。", width / 2, height / 2 - 50);
         
     } else if (percentage > 0) {
-        // 低分：顯示警示文本，使用紅色 [6]
-        fill(0, 255, 255); // HSB 紅色
+        // 低分：顯示警示文本 (HSB 紅色)
+        fill(0, 255, 255); 
         text("需要加強努力！", width / 2, height / 2 - 50);
         
     } else {
         // 尚未收到分數或分數為 0
-        fill(255);
-        text(scoreText, width / 2, height / 2);
+        fill(255); // 白色
+        text("等待分數...", width / 2, height / 2);
     }
 
     // 顯示具體分數
     textSize(50);
-    fill(255);
+    fill(255); // 白色
     text(`得分: ${finalScore}/${maxScore}`, width / 2, height / 2 + 50);
     
     
@@ -96,24 +91,16 @@ function draw() {
     // -----------------------------------------------------------------
     
     if (percentage >= 90) {
-        // 【新增】每隔一段時間隨機產生一個新的煙火物件
+        // 【煙火觸發點】每隔一段時間隨機產生一個新的煙火物件
         if (random(1) < 0.05) { // 調整這個值來控制煙火發射頻率
             fireworks.push(new Firework()); 
         }
 
-        // 畫一個大圓圈代表完美 [7] (可以選擇保留或刪除)
-        fill(100, 200, 200, 0.5); // 帶透明度
+        // 畫一個大圓圈代表完美 
+        fill(100, 255, 255, 0.5); // 帶透明度
         noStroke();
         circle(width / 2, height / 2 + 150, 150);
 
-    } else if (percentage >= 60) {
-        // 畫一個方形 [4]
-        fill(45, 255, 255, 0.5);
-        rectMode(CENTER);
-        rect(width / 2, height / 2 + 150, 150, 150);
-        
-        // 【新增】非高分時，清空煙火陣列以停止特效
-        fireworks = [];
     } else {
         // 【新增】非高分時，清空煙火陣列以停止特效
         fireworks = [];
@@ -183,7 +170,8 @@ class Particle {
 
     display() {
         strokeWeight(2);
-        stroke(this.hu, 255, 255, this.lifespan);
+        // 顏色使用 HSB 模式，並使用 this.lifespan 來控制 Alpha (透明度)
+        stroke(this.hu, 255, 255, this.lifespan); 
         point(this.pos.x, this.pos.y);
     }
 
@@ -220,6 +208,7 @@ class Firework {
             for (let i = this.particles.length - 1; i >= 0; i--) {
                 this.particles[i].applyForce(this.gravity);
                 this.particles[i].update();
+                // 為了簡單，我們在這裡不進行粒子移除，而是交給 firework 的 isFinished 檢查
             }
         }
     }
